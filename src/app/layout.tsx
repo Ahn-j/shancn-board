@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { Roboto } from "next/font/google";
+import "@/styles/globals.css";
+import SideNavigation from "@/components/common/navigation/SideNavigation";
+//shadcn UI - Toaster
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+//상태관리시 프로바이더로 묶어주지않아도 jotai 내부에 디폴트로 스토어가있어 자동으로 전역으로 사용가능
+//프로바이더로 묶으면 독립된 jotai스토어생성, 테스트/모듈분리 가능,
+//넥스트js/SSR에서 서버와 클라이언트 상태가 꼬일가능성이잇어서 권장됨
+import { Provider } from "jotai";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const roboto = Roboto({
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 export const metadata: Metadata = {
@@ -24,10 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={roboto.className}>
+        <Provider>
+          <SideNavigation />
+          {children}
+          <Toaster />
+        </Provider>
       </body>
     </html>
   );

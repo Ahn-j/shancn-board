@@ -1,0 +1,71 @@
+.container{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  width: calc(100% - 40px);
+
+  padding: 20px;
+  margin: 4px 0;
+
+  background-color: #ffffff;
+  border-radius: 4px;
+  box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.2);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+
+    &__titleBox{
+      display: flex;
+      align-items: center;
+
+      flex: 1;
+      gap: 8px;
+
+      .title {
+          width: 100%;
+      
+          font-weight: 500;
+          font-size: 24px;
+          color: #454545;
+      
+          &::placeholder {
+            font-weight: 500;
+            color: #bdbdbd;
+          }
+        }
+    }
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+
+    padding: 20px 0 14px 0;
+
+    &__calenderBox {
+      display: flex;
+      align-items: center;
+
+      gap: 16px;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+
+    padding-top: 14px;
+    border-top: 1px solid #bdbdbd;
+  }
+}
