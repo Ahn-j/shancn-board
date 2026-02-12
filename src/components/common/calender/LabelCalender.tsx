@@ -6,13 +6,13 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar/calendar";
 import {
+  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -23,9 +23,7 @@ interface Props {
 }
 
 function LabelCalender({ label, readonly, startEndDate, handleDate }: Props) {
-  console.log("startEndDate : ", startEndDate);
   const [date, setDate] = useState<Date>();
-  console.log("date: ", date);
 
   useEffect(() => {
     if (startEndDate) {
@@ -35,7 +33,6 @@ function LabelCalender({ label, readonly, startEndDate, handleDate }: Props) {
   }, [startEndDate]);
 
   const handleSelect = (value: Date | undefined) => {
-    console.log("handleSelect", value);
     setDate(value);
     if (handleDate) handleDate(value);
   };

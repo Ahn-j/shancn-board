@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button/button";
 import styles from "./MarkdownDialog.module.scss";
 
 import MDEditor from "@uiw/react-md-editor";
@@ -8,39 +8,21 @@ import MDEditor from "@uiw/react-md-editor";
 import { toast } from "sonner";
 
 import {
+  Checkbox,
+  Separator,
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/ui";
 import LabelCalender from "../calender/LabelCalender";
-import { Separator } from "@/components/ui/separator";
 import { ChangeEvent, useEffect, useState } from "react";
-import { supabase } from "@/utils/supabase";
-import { start } from "repl";
+import { supabase } from "@/utils/supabase/client";
 import { usePathname } from "next/navigation";
-
-interface Todo {
-  id: number;
-  title: string;
-  start_date: string | Date;
-  end_date: string | Date;
-  contents: BoardContent[];
-}
-
-interface BoardContent {
-  boardId: string | number;
-  inCompleted: boolean;
-  title: string;
-  startDate: string | Date;
-  endDate: string | Date;
-  content: string;
-}
+import { Todo, BoardContent } from "@/types";
 
 interface Props {
   data: BoardContent;
@@ -48,25 +30,20 @@ interface Props {
 }
 
 function MarkdownDialog({ data, setDoneflg }: Props) {
-  console.log("mock data", data);
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+
   const [title, setTitle] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [content, setContent] = useState<string | undefined>("");
 
-  console.log("startDate; ", startDate);
-  console.log("endDate; ", endDate);
   //初期処理
   useEffect(() => {
-    console.log("first ssssssssss--------");
     setTitle(data.title);
-    // console.log("data.startDate : ", data.startDate);
-    // console.log("data.startDate : ", new Date(data.startDate));
-    // setStartDate(new Date(data.startDate));
-    // setEndDate(new Date(data.endDate));
     setContent(data.content);
+    setIsCompleted(data.inCompleted);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
@@ -91,28 +68,25 @@ function MarkdownDialog({ data, setDoneflg }: Props) {
 
     //해당 보드에 대한 데이터만 수정이 되도록한다.
     const { data: todos } = await supabase.from("todos").select("*");
-    console.log("todos : ", todos);
     if (todos !== null) {
       todos.forEach(async (item: Todo) => {
         if (item.id === Number(pathname.split("/")[2])) {
-          console.log("item : ", item);
           item.contents.forEach((el: BoardContent) => {
-            console.log("el : ", el);
-            console.log("data boardId: ", data.boardId);
             if (el.boardId === data.boardId) {
               el.title = title;
               el.content = content;
               el.startDate = startDate;
               el.endDate = endDate;
+              el.inCompleted = isCompleted;
             } else {
               el.title = el.title;
               el.content = el.content;
               el.startDate = el.startDate;
               el.endDate = el.endDate;
+              el.inCompleted = el.inCompleted;
             }
           });
 
-          console.log("item.contents : ", item.contents);
           //supabase 연동
           const { error, status } = await supabase
             .from("todos")
@@ -145,7 +119,6 @@ function MarkdownDialog({ data, setDoneflg }: Props) {
   };
 
   const handleChgTitle = (e: ChangeEvent<HTMLInputElement>) => {
-    console.log("title : ", e.target.value);
     setTitle(e.target.value);
   };
 
@@ -175,7 +148,15 @@ function MarkdownDialog({ data, setDoneflg }: Props) {
         <DialogHeader>
           <DialogTitle>
             <div className={styles.dialog__titleBox}>
-              <Checkbox className="w-5 h-5" />
+              <Checkbox
+                className="w-5 h-5"
+                checked={isCompleted}
+                onCheckedChange={(checked) => {
+                  if (typeof checked === "boolean") {
+                    setIsCompleted(checked);
+                  }
+                }}
+              />
               <input
                 type="text"
                 value={title}

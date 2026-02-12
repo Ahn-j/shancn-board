@@ -3,7 +3,7 @@ import { Roboto } from "next/font/google";
 import "@/styles/globals.css";
 import SideNavigation from "@/components/common/navigation/SideNavigation";
 //shadcn UI - Toaster
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner/sonner";
 
 //상태관리시 프로바이더로 묶어주지않아도 jotai 내부에 디폴트로 스토어가있어 자동으로 전역으로 사용가능
 //프로바이더로 묶으면 독립된 jotai스토어생성, 테스트/모듈분리 가능,

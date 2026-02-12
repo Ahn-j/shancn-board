@@ -1,3 +1,8 @@
+import { Todo } from "@/types";
 import { atom } from "jotai";
 
-export const sidebarStateAtom = atom<string>("default"); //기본값 설정
+//todo 젠체목록
+export const tasksAtom = atom<Todo[]>([]);
+
+//todo리스트중 한건
+export const onTaskAtom = atom<Todo | null>(null);

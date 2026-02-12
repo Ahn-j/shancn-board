@@ -3,44 +3,33 @@
 import styles from "./page.module.scss";
 import Image from "next/image";
 //chadn UI
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Progress, Button } from "@/components/ui";
+
 import LabelCalender from "@/components/common/calender/LabelCalender";
 import BasicBoard from "@/components/common/board/BasicBoard";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabase";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabase/client";
 import { toast } from "sonner";
 //고유한 ID지정을 위함
 import { nanoid } from "nanoid";
 import { ChevronLeft } from "lucide-react";
 
-//전역상태관리
-import { useAtom } from "jotai";
-import { sidebarStateAtom } from "@/store";
+import { Todo, BoardContent } from "@/types";
 
-interface Todo {
-  id: number;
-  title: string;
-  start_date: string | Date;
-  end_date: string | Date;
-  contents: BoardContent[];
-}
-
-interface BoardContent {
-  boardId: string | number;
-  inCompleted: boolean;
-  title: string;
-  startDate: string | Date;
-  endDate: string | Date;
-  content: string;
-}
+//커스텀훅
+import {
+  useCreateBoard,
+  useGetTaskById,
+  useDeleteTask,
+  useGetTasks,
+} from "@/hooks/apis";
+import DeleteAlertDialog from "@/components/common/dialog/DeleteAlertDialog";
 
 function Create() {
   const router = useRouter();
   const pathname = usePathname();
-
-  const [sidebarState, setSidebarState] = useAtom(sidebarStateAtom);
+  const { id } = useParams();
 
   const [boards, setBoards] = useState<Todo>({
     id: 0,
@@ -49,44 +38,26 @@ function Create() {
     end_date: new Date(),
     contents: [],
   });
-  console.log("boards : ", boards);
+
   const [title, setTitle] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
 
-  const [isClicked, setIsClicked] = useState<boolean>(false);
+  // const [isClicked, setIsClicked] = useState<boolean>(false);
+
+  const [count, setCount] = useState<number>(0);
 
   const [deleteFlg, setDeleteFlg] = useState<boolean>(false);
   const [updateFlg, setUpdateFlg] = useState<boolean>(false);
 
-  console.log("deleteFlg : ", deleteFlg);
-  console.log("updateFlg :", updateFlg);
+  const { createBoard } = useCreateBoard();
+  const { getOneTasks } = useGetTaskById();
+  const { deleteTask } = useDeleteTask();
 
-  //====================================================
-  const insertRowData = async (contents: BoardContent[]) => {
-    //supabase얀동
-    console.log("update!!! : ", contents);
-    const { data, error, status } = await supabase
-      .from("todos")
-      .update({
-        contents: contents,
-      })
-      .eq("id", pathname.split("/")[2]); //where문과 같음 첫번째인수가 항목이고 두번쨰인수가 벨류 즉, where id= value
-
-    if (error) {
-      console.log("error: ", error);
-      toast.error("Error inserting data: " + error.message);
-    }
-    console.log("status : ", status);
-    if (status === 204) {
-      toast.success("업데이트 완료!!!");
-      getTodos();
-    }
-  };
+  const { getTasks } = useGetTasks();
 
   //add new board버튼 클릭시
-  const createBoard = () => {
-    console.log("gogogogogogogo");
+  const handelCreateBoard = async () => {
     let newContents: BoardContent[] = [];
     const BoardContent = {
       boardId: nanoid(),
@@ -96,23 +67,29 @@ function Create() {
       endDate: "",
       content: "",
     };
-    console.log("boards: ", boards);
+
     //UI 그리기
     if (boards) {
-      console.log("not undefined");
       if (boards.contents.length > 0) {
-        console.log("1");
         //보드의 내용이 있고, 보드안의 컨텐츠리스트에 내용이있다면
         //그 보드의안의 컨텐츠리스트를 전부 복사(얕은복사)후 newContents에 저장후
         //새로운 데이터를 푸쉬함
         newContents = [...boards.contents];
         newContents.push(BoardContent);
-        insertRowData(newContents);
+        // insertRowData(newContents);
+        //커스텀훅 사용
+        const result = await createBoard(Number(id), "contents", newContents);
+        if (result) {
+          getTodos();
+        }
       } else if (boards.contents.length === 0) {
-        console.log("2");
         //컨텐츠리스트에 값이없으면 그냥 newContents에 새로운데이터만 푸쉬
         newContents.push(BoardContent);
-        insertRowData(newContents);
+        //커스텀훅 사용
+        const result = await createBoard(Number(id), "contents", newContents);
+        if (result) {
+          getTodos();
+        }
       }
     }
   };
@@ -121,26 +98,17 @@ function Create() {
 
   //supabase에서 todos 불러오기
   const getTodos = async () => {
-    const { data: todos, error } = await supabase.from("todos").select("*");
-    // .eq("id", pathname.split("/")[2]);
+    const result = await getOneTasks(Number(id));
 
-    if (error) {
-      toast.error("Error fetching todos");
-      console.log("Error fetching todos:", error);
-      return;
-    }
+    if (result) {
+      setBoards(result);
+      setTitle(result.title);
+      setStartDate(new Date(result.start_date));
+      setEndDate(new Date(result.end_date));
 
-    if (todos === null || todos.length === 0) {
-      toast.message("no find data");
-    }
-    if (todos) {
-      console.log("Fetched todos:", todos);
-      todos.map((item: Todo) => {
-        if (item.id === Number(pathname.split("/")[2])) {
-          setBoards(item);
-          setTitle(item.title);
-        }
-      });
+      setCount(result.contents.filter((item) => item.inCompleted).length);
+
+      getTasks();
     }
   };
 
@@ -150,6 +118,7 @@ function Create() {
       getTodos();
       setDeleteFlg(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deleteFlg]);
 
   //MarkdownDialog에서 갱신처리시
@@ -158,6 +127,7 @@ function Create() {
       getTodos();
       setUpdateFlg(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateFlg]);
 
   useEffect(() => {
@@ -166,12 +136,13 @@ function Create() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  console.log("create title ; ", title);
-  const onSave = async () => {
-    const { data, error, status } = await supabase
+  const handleSave = async () => {
+    const { error, status } = await supabase
       .from("todos")
       .update({
         title: title,
+        start_date: startDate,
+        end_date: endDate,
       })
       .eq("id", pathname.split("/")[2]);
 
@@ -180,21 +151,31 @@ function Create() {
     }
 
     if (status === 204) {
-      toast.message("엡데이트 완료");
+      toast.message("save 완료");
       getTodos();
-      setSidebarState("updated");
+    }
+  };
+
+  const goDelete = async () => {
+    const result = await deleteTask(Number(id));
+
+    if (result) {
+      getTasks();
     }
   };
 
   return (
     <div className={styles.container}>
-      <div className="absolute top-6 sm:left-60 lg:left-36 flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
+      <div className="absolute top-6 left-3 flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => router.push("/")}>
           <ChevronLeft />
         </Button>
-        <Button variant="outline" onClick={onSave}>
-          저장
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={handleSave}>
+            저장
+          </Button>
+          <DeleteAlertDialog btnName="Remove" handleClick={goDelete} />
+        </div>
       </div>
       <header className={styles.container__header}>
         <div className={styles.container__header__contents}>
@@ -206,10 +187,16 @@ function Create() {
             className={styles.input}
           />
           <div className={styles.progressBar}>
-            <span className={styles.progressBar__status}>0/10 completed</span>
+            <span className={styles.progressBar__status}>
+              {count}/{boards.contents.length} completed
+            </span>
             {/* 프로그래스 UI */}
             <Progress
-              value={12}
+              value={
+                boards.contents.length > 0
+                  ? (count / boards.contents.length) * 100
+                  : 0
+              }
               className="w-50 h-2"
               indicatorColor="bg-green-500"
             />
@@ -217,13 +204,21 @@ function Create() {
           <div className={styles.calenderBox}>
             <div className={styles.calenderBox__calender}>
               {/* calender UI */}
-              <LabelCalender label="From" readonly />
-              <LabelCalender label="To" />
+              <LabelCalender
+                label="From"
+                startEndDate={startDate}
+                handleDate={setStartDate}
+              />
+              <LabelCalender
+                label="To"
+                startEndDate={endDate}
+                handleDate={setEndDate}
+              />
             </div>
             <Button
               variant="outline"
               className="w-[15%] border-orange-500 bg-orange-400  text-white hover:bg-orange-400 hover:text-white"
-              onClick={createBoard}
+              onClick={handelCreateBoard}
             >
               add new board
             </Button>
@@ -238,7 +233,7 @@ function Create() {
               <span className={styles.subTitle}>
                 Click the button and start flashing
               </span>
-              <button className={styles.button} onClick={createBoard}>
+              <button className={styles.button} onClick={handelCreateBoard}>
                 <Image
                   src="/assets/images/free-icon-font-add-3914248.png"
                   alt="plus icon"
@@ -256,8 +251,8 @@ function Create() {
                 <BasicBoard
                   key={board.boardId}
                   data={board}
-                  setDeleteDate={setDeleteFlg}
-                  setUpdateDate={setUpdateFlg}
+                  setDeleteData={setDeleteFlg}
+                  setUpdateData={setUpdateFlg}
                 />
               );
             })}

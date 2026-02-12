@@ -1,56 +1,47 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import styles from "./page.module.scss";
 //shadcn UI
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/utils/supabase";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button/button";
 
-//전역상태관리
-import { useAtom } from "jotai";
-import { sidebarStateAtom } from "@/store";
+//custom Hook
+import { useCreateTask } from "@/hooks/apis";
 
-function Home() {
-  const router = useRouter();
-  const [sidebarState, setSidebarState] = useAtom(sidebarStateAtom);
-
+function InitPage() {
   //페이지 생성 및 Supabase연동
-  const handleCreateTask = async () => {
-    //Supabase 데이터베이스 row 생성
-    const { error, status } = await supabase
-      .from("todos")
-      .insert([
-        {
-          title: "",
-          start_date: new Date(),
-          end_date: new Date(),
-          contents: [],
-        },
-      ])
-      .select();
+  // const handleCreateTask = async () => {
+  //   //Supabase 데이터베이스 row 생성
+  //   const { error, status } = await supabase
+  //     .from("todos")
+  //     .insert([
+  //       {
+  //         title: "",
+  //         start_date: new Date(),
+  //         end_date: new Date(),
+  //         contents: [],
+  //       },
+  //     ])
+  //     .select();
 
-    if (error) {
-      console.log("error : ", error);
-      return;
-    }
+  //   if (error) {
+  //     return;
+  //   }
 
-    // 방금 생성한 TODOLIST의 ID 값으로 URL파라미터 생성/변경(동적라우팅)
-    const { data } = await supabase.from("todos").select();
+  //   // 방금 생성한 TODOLIST의 ID 값으로 URL파라미터 생성/변경(동적라우팅)
+  //   const { data } = await supabase.from("todos").select();
 
-    if (status === 201) {
-      toast.success("새로운 할일리스트 생성완료");
-      setSidebarState("createPage");
-      if (data) {
-        router.push(`/create/${data[data.length - 1].id}`);
-      } else {
-        return;
-      }
-    }
+  //   if (status === 201) {
+  //     toast.success("새로운 할일리스트 생성완료");
+  //     setSidebarState("createPage");
+  //     if (data) {
+  //       router.push(`/create/${data[data.length - 1].id}`);
+  //     } else {
+  //       return;
+  //     }
+  //   }
+  // };
 
-    console.log("data: ", data);
-  };
-
+  const handleCreateTask = useCreateTask();
   return (
     <div className={styles.container}>
       <div className={styles.container__onBoarding}>
@@ -74,4 +65,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default InitPage;
